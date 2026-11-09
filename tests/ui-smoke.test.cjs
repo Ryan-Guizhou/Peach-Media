@@ -20,9 +20,9 @@ function launch(){
  return{elements,callbacks,loc,memory};
 }
 
-test('all twenty-five navigation routes render with useful content and no exceptions',()=>{
+test('all twenty-two enterprise navigation routes render with useful content and no exceptions',()=>{
  const app=launch();
- const routes=['overview','assets','projects','folders','metadata','reviews','uploads','storage','jobs','workflows','processors','runtimes','schedules','api','webhooks','events','delivery','usage','billing','tenants','organizations','permissions','monitor','audit','settings'];
+ const routes=['overview','assets','projects','folders','metadata','reviews','uploads','storage','jobs','workflows','processors','runtimes','schedules','delivery','usage','billing','tenants','organizations','permissions','monitor','audit','settings'];
  for(const route of routes){app.loc.hash='#'+route;app.callbacks.window.hashchange();const html=app.elements.app.innerHTML;assert.ok(html.includes('Peach Media'),route);assert.ok(html.length>5000,`${route}: rendered only ${html.length} characters`);assert.ok(!html.includes('undefined</'),route);}
 });
 

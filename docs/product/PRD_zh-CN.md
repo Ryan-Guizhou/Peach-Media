@@ -8,7 +8,32 @@
 
 Peach Media Cloud 定位为**面向企业内容团队、开发者和第三方 SaaS 的多租户数字资产管理（DAM）与容器化媒体/数据处理平台**，不是网盘，也不是视频编辑器。用户从控制台、SDK 和 Open API 上传资产，平台进行多云存储、隔离扫描、元数据管理、容器化异步处理、审核、授权交付、Webhook 回调与用量核算，形成完整的数据闭环。
 
-核心技术目标是复用 **peach-cloud** 的 Gateway、Auth、Setting、FileService、Message、Monitor、Generator、Nacos、Redis、MySQL、RocketMQ 和既有可观测性能力。媒体业务代码隔离在 Peach Media 业务域，计算执行抽象为 Peach Compute；OTRYX Flow 作为**候选**周期调度和 DAG 依赖平台，必须先核验它的实际接口、部署稳定性与功能成熟度，不能假设其已经具备全部能力。
+核心技术目标是复用 **peach-cloud** 的 Gateway、Auth、Setting、FileService、Message、Monitor、Generator、Nacos、Redis、MySQL、RocketMQ 和既有可观测性能力。媒体业务代码隔离在 Peach Media 业务域，计算执行抽象为 Peach Compute；本期**不集成 外部 RPC 框架**：内部同步服务调用采用 Spring Cloud OpenFeign；周期性触发由 Peach Scheduler 独立实现，处理作业仍由 Peach Compute 管理。
+
+### 0.5 三套相互独立、协同工作的产品入口（FR-137 ~ FR-144）
+
+**决定：** 三入口属于同一 SaaS，但不是同一个后台的三个菜单组。未来生产部署需要独立构建、独立发布和可独立扩缩容；共享同一身份/租户/项目资源模型，不能共享彼此的前端管理员权限。当前 HTML 原型以不同静态 HTML 文档演示三个入口；本地 Node Mock API 提供可请求的独立 HTTP 接口。
+
+| 入口 | 未来推荐域名/路径（拟议） | 主要用户 | 独立交付 | 可以访问的能力 |
+|---|---|---|---|---|
+| 企业管理控制台 | `console.<your-domain>` | 租户管理员、内容团队、运营/审计 | Enterprise Console 静态应用 + 业务 BFF | DAM、审核、文件、媒体任务、资源治理、权限、配额、用量 |
+| 开发者平台 | `developers.<your-domain>` | SDK/API 接入人员 | Developer Portal 静态应用 + Developer BFF | 接入应用、环境、Scope、密钥、Webhook、SDK、调试记录 |
+| Open API 服务 | `api.<your-domain>/openapi/v1` | 第三方应用/机器身份 | 独立 Gateway/OpenAPI Service（HTTP） | 上传会话、Asset/Job、交付、事件上报、用量；示例调试器仅为开发者工具 |
+
+| ID | 功能需求 | 必须满足的行为与权限边界 | 验收方式 |
+|---|---|---|---|
+| FR-137 | 三入口独立部署 | 控制台与开发者平台分别打包；Open API 单独扩缩容，不把 REST 接口当后台页面 | 独立构建并验证每个域名/路径 |
+| FR-138 | 企业控制台领域隔离 | 不再以菜单混放 API Key/Webhook/开发者文档，允许明确跳转开发者平台 | 侧栏权限、菜单入口与跳转 E2E |
+| FR-139 | 开发者工作空间 | 接入项目、环境、凭证、Scope、Webhook、SDK 示例、调用审计与用量 | 凭证生成/轮换/撤销、Webhook 流程 |
+| FR-140 | 独立开放 API | 版本化 HTTPS REST，按服务端可信 API Key 解析 tenant/project/env/scope，错误与 202 语义稳定 | 未授权 401、无 Scope 403、跨租户 404、异步返回 202 |
+| FR-141 | 跨入口数据闭环 | 开发者创建 Key → 外部创建上传/Job/事件 → 控制台看见资产、任务、事件和用量 | 集成 E2E 跨入口数据一致性验证 |
+| FR-142 | 内部通信标准 | Spring Cloud OpenFeign 处理同步服务调用，RocketMQ 处理异步事件，不引入 外部 RPC 框架 | 服务接口、租户上下文、超时/重试/隔离契约 |
+| FR-143 | 内置定时调度 | Peach Scheduler 独立持久化 Cron/延迟/依赖触发；通过幂等 HTTP/API 或消息创建任务 | 多实例触发、重复/故障/失联恢复测试 |
+| FR-144 | 可运行三入口原型 | 独立页面及本地 Mock API；静态模式只能预览，Node 模式支持真实 HTTP 数据模拟闭环 | 三页面路由 + Mock API 集成自动化检查 |
+
+**明确排除：** 本期不依赖 外部 RPC 调度组件，也不通过 外部 RPC 框架 实现 Peach Media 服务调用。接口标准以 OpenFeign + HTTP REST、RocketMQ 异步消息为准。模拟 HTTP Server 只监听 127.0.0.1，不是生产 API 实现。
+
+![三入口架构](../architecture/00-three-entry-architecture.svg)
 
 ### 0.1 设计原则
 
@@ -214,7 +239,7 @@ Peach Media Cloud 定位为**面向企业内容团队、开发者和第三方 Sa
 | FR-129 | 审计 | 用户/平台/机器身份的授权结果、配置、操作、下载及权限变更追溯 |
 | FR-130 | 数据保留策略 | 上传会话、原始文件、衍生物、日志、用量事件、审计各自独立期限 |
 | FR-131 | 调度任务 | 上传过期回收、对象对账、失败补偿、日用量统计、存储归档、链接撤销 |
-| FR-132 | 工作流触发 | OTRYX Flow/替代 Scheduler 插件，不把计划完成误判为业务完成 |
+| FR-132 | 工作流触发 | Peach Scheduler 内置持久化计划、集群租约、触发记录与重试；不把触发成功误判为业务完成 |
 | FR-133 | 运维部署 | Docker Compose 单机演示、K8s Helm/Kustomize 参考、配置/Secret 安全注入 |
 | FR-134 | 灾备恢复 | 数据库备份、对象版本/快照、任务恢复与一致性扫描、故障演练 |
 | FR-135 | 测试套件 | 单元/契约/集成/E2E/租户越权/大文件/性能/故障注入/资源泄漏 |
@@ -425,7 +450,7 @@ Content-Type: application/json
 | `peach-openapi` | API Key、SDK 合同、项目环境、调用计量 | 外部开发者生态 |
 | `peach-webhook` | 事件订阅、可靠投递、签名、死信 | 通知领域 |
 | `peach-usage` | 配额预留、用量事件、不可变计费账本、统计 | 用量域 |
-| `peach-scheduler-adapter` | 对接 OTRYX Flow/其他调度器统一触发接口 | 计划触发，不冒充处理执行者 |
+| `peach-scheduler` | Peach Media 自有定时任务、延迟触发、任务依赖、触发审计 | 内部使用 OpenFeign 提交受理、Outbox/RocketMQ 通知，不直接执行媒体计算 |
 | `peach-media-worker-*` | libvips/FFmpeg/Python/Go/Office 的 OCI Worker | 受限容器，仅获取任务级凭据 |
 
 ### 6.2 分层部署
@@ -446,13 +471,13 @@ Content-Type: application/json
 | 租户模型 | 共享数据库 + 共享 Schema + 强制 tenantId | 独立 Schema/DB 推高迁移运维成本，保留扩展接口 |
 | 权限模型 | RBAC + ABAC + 资源关系 + 数据范围 | 仅 RBAC 不能表达项目/目录/资源/字段的复杂边界 |
 | 分析数据 | MySQL 聚合先行 | ClickHouse/OpenSearch 仅在规模验证后引入 |
-| 调度 | 调度抽象接口，对接 OTRYX Flow | Flow 未经适配验证不能成为生产单点依赖 |
+| 调度 | Peach Scheduler（MySQL 计划持久化 + 集群租约 + 幂等触发） | 不依赖独立 RPC 调度框架；多实例需要防止重复副作用 |
 
 ## 7. 研发阶段划分与依赖图
 
-### P0 — 产品需求、架构合同与脚手架衔接（第一阶段）
+### P0 — 产品需求、三入口架构合同与脚手架衔接（第一阶段）
 
-- **交付**：本文 PRD、API 与 Worker 协议、四幅可编辑 SVG/对应 Mermaid、可点击 HTML/CSS/JS 原型、README 中英文、设计与交互契约、基线测试。
+- **交付**：本文 PRD、API 与 Worker 协议、五幅可编辑 SVG/对应 Mermaid、可点击 HTML/CSS/JS 原型、README 中英文、设计与交互契约、基线测试。
 - **任务**：审核 peach-cloud 的实际模块与接口；建立多租户资源统一规范、包名/日志/代码生成约定；确认 Java/Spring/Nacos/MQ 兼容版本。
 - **验收**：本地打开原型，无构建依赖；关键导航、租户切换、资产/任务/密钥等交互可演示；文档没有把未来规划写成已实现。
 
@@ -509,7 +534,7 @@ Content-Type: application/json
 | 风险/依赖 | 建议处理 |
 |---|---|
 | peach-cloud 实际完成度未审计 | 启动 P1 前核验真实源代码和 CI；只能按已完成能力复用 |
-| OTRYX Flow 任务编排与生产成熟度不确定 | 先以 Scheduler Adapter 隔离，实现最小稳定调度接口 |
+| 调度器多实例重复触发/租约丢失 | Peach Scheduler 持久化 Trigger、抢占租约、fencing token 与幂等受理，故障后对账 |
 | 大文件扫描开销与加密/权限复杂性 | 隔离区严格，压缩包安全扫描有界、失败默认不公开 |
 | Docker Agent 权限过高 | 服务不挂载 Docker Socket；专用受限 Agent，严格调用白名单 |
 | 跨租户资源缓存/对象去重信息泄露 | 在授权边界内去重，跨租户缓存使用不可推断的 Token |

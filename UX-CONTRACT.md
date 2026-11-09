@@ -2,7 +2,7 @@
 
 ## Product context
 
-- Audience: tenant administrators, content editors, developer integrators, operators and auditors.
+- Audience: tenant administrators/content editors (enterprise console), developer integrators (developer portal), API clients (Open API), operators and auditors.
 - Primary jobs: locate/process/publish assets, manage jobs, integrate APIs, inspect usage/security.
 - Locale: `zh-CN`; date/number format consistent with China locale. The user can switch tenant in demo; the server design uses trustworthy tenant identity.
 - Accessibility target for production: WCAG 2.2 AA. HTML prototype is a no-backend demonstration and not proof of production authorization.
@@ -20,7 +20,9 @@
 
 | Capability | Owner | State/behavior | Verification |
 |---|---|---|---|
-| Navigation | `prototype/app.js` route registry + `go()` | Hash route, supported back/forward navigation | Manual + smoke |
+| Enterprise navigation | `prototype/app.js` route registry + `go()` | Enterprise-only hash routes; no developer/API sections | Manual + smoke |
+| Developer navigation | `prototype/developers/developer.js` | Separate hash route workspace and own sidebar | Standalone route + smoke |
+| Open API explorer | `prototype/openapi/explorer.js` | Independently selects HTTP method/path/body; executes request against local Mock | HTTP integration test |
 | List selection | Browser-native list/card details | One current resource detail; no bulk selection in prototype | UI-04 |
 | Select | Native `<select>` | Keyboard native semantics, no custom popup | UI-03, UI-04 |
 | Date/time | Read-only locale date strings | No date picker in prototype | Manual |
@@ -28,7 +30,7 @@
 | Toast | `notify()` | App-owned transient 4.3s, semantic success/warn/error | UI-05–10 |
 | Modal/drawer | `showModal()/openDrawer()/renderOverlay()` | Single overlay, ESC/backdrop close, first input focus | UI-04, UI-09 |
 | CRUD | `onAction()/onSubmit()` | Tenant-scoped local fixture mutations, persistent via localStorage | UI-04–12 |
-| Table | `table()` shared renderer | Scrollable columns, explicit empty state | UI-04/11 |
+| Table | `table()` (enterprise); native table (developer) | Scrollable columns, explicit empty state | UI-04/11 |
 | Scrollbar | Global `prototype/styles.css` | Visible, keyboard navigable, never hidden | UI-13 |
 
 ## Flow ledger
@@ -58,7 +60,9 @@
 
 ## Navigation and responsive
 
-- `prototype/#overview` is the default; sections grouped by workspace, processing, developer, and operations/security domains.
+- `prototype/index.html` is the product entrance hub. Enterprise `prototype/console/index.html#overview` and Developer `prototype/developers/index.html#overview` are separate HTML documents. Open API debugger is `prototype/openapi/index.html`, while `/openapi/v1/*` is a real local HTTP Mock route when started with Node.
+- Enterprise console contains DAM/compute/organization/operations, not API Key or Webhook administration. Developer platform contains API project, credentials, Webhook, SDK, usage; links explicitly cross product boundaries.
+- With Mock running, developer creates temporary API Key, API explorer submits requests, enterprise dashboard can refresh cross-entry activity. Without Node, show an honest static-preview state.
 - Desktop fixed sidebar and sticky topbar; on mobile sidebar becomes an overlay; card grids collapse and tables scroll horizontally.
 - Users can search function names with Ctrl/Command+K focusing global search, Enter navigates to matching page; Enter/Space activate details cards.
 - Dialog close: `Escape`, explicit close action or overlay backdrop. For production add focus trap/return focus and full browser automation matrix.

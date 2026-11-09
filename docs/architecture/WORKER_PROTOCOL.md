@@ -108,3 +108,9 @@ public interface ContainerRuntime {
 - 用 Java、Python、Go 统一样例验证 Manifest 解码、参数白名单、输出 Hash、进度、取消、心跳、超时、重复结果。
 - Docker 和 Kubernetes Runtime 运行同一套合同测试（在有环境时执行）；测试创建失败、资源配额拒绝和多租户命名空间隔离。
 - 压测图像 Worker 池、长视频 K8s Job、巨型 CSV 分块任务的内存峰值；记录环境和硬件、处理速率、失败率及可恢复性。
+
+## 调度与服务调用边界（本期约束）
+
+- 本期定时触发器由 **Peach Scheduler** 自有实现，不接入外部调度产品。调度创建 Job 请求使用 OpenFeign HTTP 或可信 RocketMQ 事件，均须幂等。
+- Worker SDK 仍使用统一 Job Manifest/Progress/Output 合同；Runtime SPI 不关心服务间使用的 Java RPC 库。
+- 内部同步调用采用 **Spring Cloud OpenFeign**，对外公开接口采用 HTTPS REST；容器生命周期管理由 Peach Compute 管理。

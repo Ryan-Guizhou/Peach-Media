@@ -9,10 +9,44 @@
 - **对象与资产解耦**：Asset 代表业务资源，Object 代表物理对象，Rendition 代表衍生处理产物；多租户权限在资产层及下载签名层同时执行。
 - **任务投递与执行**：MySQL 本地事务 + Outbox → RocketMQ → 资源调度 → Docker/K8s → Worker Manifest → 验证 → 发布。仅提供至少一次投递语义，业务效果以幂等保障。
 - **双 Runtime**：Docker Agent 用于个人开发/单机运行，Kubernetes Job 用于分布式生产。Kubernetes 节点通常使用 containerd/CRI-O，DockerRuntime 不等于 K8s 节点运行时。
-- **任务调度分工**：OTRYX Flow 负责任务计划/依赖编排的候选集成；Peach Compute 负责每次容器计算执行。先验证 Flow 的真实可用 API 和版本再决定接入方式。
+- **任务调度分工**：本期独立实现 Peach Scheduler（计划持久化、集群租约、幂等触发、重试），Peach Compute 专注单次容器任务执行。内部同步服务调用一律使用 Spring Cloud OpenFeign，异步事件使用 RocketMQ；不接入 外部 RPC 框架。
 - **不可信文件处理**：ClamAV 与 MIME 真实校验、隔离区、处理器白名单、网络和文件系统隔离；用户自定义容器属于后期高风险功能。
 
+![三入口产品架构](00-three-entry-architecture.svg)
+
 ![平台架构](01-platform-overview.svg)
+
+## 1.1 三入口的独立部署与协作拓扑
+
+```mermaid
+flowchart TB
+  Console[企业管理控制台 console.*] --> ConsoleBFF[Console BFF / Gateway]
+  Developer[开发者平台 developers.*] --> DeveloperBFF[Developer BFF / Gateway]
+  Client[第三方服务器与 SDK] --> API[Open API api.* /openapi/v1]
+  Developer --> API
+  ConsoleBFF --> Auth[Peach Cloud Auth / Tenant / RBAC]
+  DeveloperBFF --> Auth
+  API --> Auth
+  ConsoleBFF --> Media[Peach Media 业务服务]
+  DeveloperBFF --> Media
+  API --> Media
+  Media -- OpenFeign HTTP --> File[FileService / Storage]
+  Media -- Outbox Event --> MQ[RocketMQ]
+  Schedule[Peach Scheduler] -- 幂等任务触发 / OpenFeign --> Media
+  MQ --> Compute[Peach Compute]
+  Compute --> Runtime[Docker Agent / Kubernetes Job]
+  Runtime --> Worker[Python / Go / FFmpeg Worker]
+  Worker --> Object[(MinIO / S3)]
+```
+
+- **企业控制台**：业务操作入口，只暴露被授权的资产、审批、任务、租户及运营管理功能。
+- **开发者平台**：项目环境、API Key、Scope、SDK、Webhook、调用日志的开发者工作台，具有独立权限策略和发布管线。
+- **Open API**：不是一个菜单或可视化后台，而是具有独立鉴权、版本、限流、幂等、配额和审计的 HTTP 服务入口。仓库的调试 UI 只是帮助开发者使用它。
+- **共享域模型**：租户、项目、Asset、Job、Event、Usage 为统一服务端事实来源；跨入口传播 tenant/project/trace 必须由可信鉴权中间件签发，不信任调用方随意传入的 tenantId。
+- **内部调用**：同步请求采用 Spring Cloud OpenFeign（HTTP），超时/熔断/权限上下文一致；异步采用 RocketMQ + Outbox。不得混用或直接耦合 外部 RPC 框架 协议。
+- **调度**：Peach Scheduler 使用 MySQL 持久化计划、租约和触发历史；多实例必须 CAS/fencing 防止重复执行不可重复的业务效果，触发媒体处理任务而不在 Scheduler 内运行 FFmpeg。
+
+**HTML 原型的映射（非生产结构）：** `prototype/console/`、`prototype/developers/` 是独立页面；`prototype/openapi/` 是接口调试器；真正可请求的 Mock HTTP 接口由 `prototype/mock-server.cjs` 暴露 `/openapi/v1/*`。浏览器本地数据与本地 HTTP 进程都是模拟，不构成生产授权或持久性保证。
 
 ## 2. 控制面和微服务职责
 
@@ -27,7 +61,8 @@
 | OpenAPI | Project/API Key/Idempotency/SDK 合同 | credential/idempotency | 密钥摘要存储，定量速率限制 |
 | Webhook | Endpoint、Delivery、Retry/Dead Letter | webhook tables | 网络不稳定，至少一次投递、签名防重放 |
 | Usage | Reserve/Commit/Release、Ledger/Aggregate | quota/usage tables | 不可变凭据、去重、可重算 |
-| Monitor/Scheduler | 技术监控、周期任务触发 | metrics/schedule | 计划触发不表示业务执行成功 |
+| Monitor | JVM/HTTP/MQ/Worker 运行指标与审计 | metrics/traces | 不直接调度任务 |
+| Peach Scheduler | Cron/延迟/依赖触发、集群租约与重试 | schedules/triggers/leases | 计划触发不表示业务执行成功 |
 
 每个业务服务拥有自己的逻辑数据表与变更事务边界，不能跨微服务共享未授权数据库连接。关键业务通过事件或服务 API 交互；不建议让 Gateway 访问业务数据库。
 

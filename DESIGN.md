@@ -46,11 +46,12 @@ components:
 
 - **Audience:** Chinese-speaking enterprise admins, content teams, developers, and operators.
 - **Product register:** High-utility SaaS/admin product rather than marketing page.
-- **Primary usage:** 13–24 inch desktop for dense work; responsive inspection on narrow mobile devices.
+- **Primary usage:** 13–24 inch desktop for dense enterprise operations and developer API integrations; responsive inspection on narrow mobile devices.
+- **Three surfaces:** a distinct entry hub, Enterprise Console (dense DAM and operations), Developer Portal (integration-first forms and logs), Open API Playground (HTTP request/response). Their navigation stays separate; cross-product links are clearly labeled.
 - **Locale:** Primary `zh-CN`; preserve technical identifiers, Processor names, and APIs in English; native numbers use locale separators.
 - **Signature:** Indigo orchestration pipeline, shown prominently on Overview, Workflow, and Processing pages.
 - **Anti-references:** An empty CRUD template, all-white table grids with identical cards, neon hacker dashboards, heavily illustrated marketing pages.
-- **Token ownership:** Runtime CSS custom properties in `prototype/styles.css` are canonical for the static prototype. This `DESIGN.md` mirrors and explains those values; update both in the same change. Dark mode overrides semantic tokens, not every component separately.
+- **Token ownership:** Shared brand tokens (`--brand-indigo`, `--brand-peach`, `--brand-navy`) are canonical in `prototype/tokens.css`. Enterprise semantics live in `prototype/styles.css`, while Hub/Developer/Open API semantics live in `prototype/portal.css` and consume shared brand tokens. This `DESIGN.md` mirrors values; update it with tokens and both CSS adapters. Enterprise dark mode overrides semantic tokens only.
 
 ## Colors
 
