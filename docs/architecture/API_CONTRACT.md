@@ -2,6 +2,12 @@
 
 > 版本 V1.0；示例 URL、ID 与响应都用于方案评审，**没有部署实际 API**。正式开发后必须同步 OpenAPI 3.1 Schema 和真实合同测试。
 
+## 独立 Open API 服务入口
+
+产品提供三个独立入口：**企业管理控制台**、**开发者平台**、**Open API**。本文件定义第三个入口的 REST 合同，不代表开发者门户的 HTML 路由。未来部署建议将 Open API 独立于 Console/Developer BFF 网关进行限流、版本化、认证与扩缩容；服务内部同步依赖使用 OpenFeign，异步通过 RocketMQ。
+
+本地原型可运行 `node prototype/mock-server.cjs`，访问 `/openapi/v1/*` 进行有限的模拟 HTTP 调用。它只有健康、资产列表/详情、模拟 Upload/Complete、Job 提交/查询、批量事件、用量等部分端点；**不接收真实文件、不可用于生产**。示例密钥仅供 loopback 体验。完整合同表中其他 API 仍属于未来需求。
+
 ## 1. 通用协议
 
 - 基础路径 `/openapi/v1`，只通过 HTTPS；`Authorization: Bearer <server-api-key>`，浏览器直传使用另一套有约束的短时签名策略。

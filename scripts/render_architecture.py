@@ -68,7 +68,7 @@ rect(D,1129,525,202,105,'Worker Runtime','Docker / Kubernetes\nPython / Go / FFm
 arrow(D,910,577,921,577);arrow(D,1115,577,1125,577)
 arrow(D,690,676,690,711)
 area(D,30,710,1320,97,'基础设施 / Governance','#fff')
-for i,(name,label) in enumerate([('MySQL','关系业务数据'),('Redis','缓存 / 配额'),('Nacos','注册与配置'),('OTRYX Flow','周期与 DAG'),('Prometheus','系统指标'),('SkyWalking / Loki','链路与日志')]):
+for i,(name,label) in enumerate([('MySQL','关系业务数据'),('Redis','缓存 / 配额'),('Nacos','注册与配置'),('Peach Scheduler','周期与 DAG'),('Prometheus','系统指标'),('SkyWalking / Loki','链路与日志')]):
     x=52+i*214; rect(D,x,747,200,49,name,'',accent='peach',fs=13)
 D.save()
 
