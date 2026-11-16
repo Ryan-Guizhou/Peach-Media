@@ -1,0 +1,12 @@
+{
+  "entityName": "AssetTag",
+  "packageName": "com.peachsoft.media",
+  "tableName": "media_asset_tag",
+  "description": "数字资产标签",
+  "fields": [
+    { "name": "assetId", "type": "Long", "required": true },
+    { "name": "tagName", "type": "String", "required": true, "length": 128 },
+    { "name": "sortOrder", "type": "Integer", "required": false },
+    { "name": "enabled", "type": "Boolean", "required": true }
+  ]
+}

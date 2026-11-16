@@ -246,3 +246,25 @@ public interface ContainerRuntime {
 ## 11. 精确架构图与生成式视觉稿的区别
 
 本目录 `01-` 到 `04-` 开头的 SVG 是**可编辑、可复查的规范示意图**，并由 `scripts/render_architecture.py` 重建；图片 `concept-*.webp` 为生成式视觉参考，仅作 UI/产品风格讨论，**不作为节点名称、流向和部署事实的唯一依据**。
+
+## 12. AI 与 Agent Skill 扩展试点：Peach Code Generator（Proposed）
+
+代码自动生成是第一项 AI 可扩展能力试点，但**现阶段只有确定性模板生成引擎**：
+
+```mermaid
+flowchart LR
+  Developer[Developer Portal] --> Schema[Schema Designer]
+  Schema --> Validator[Deterministic Validator]
+  Validator --> Engine[Template Generator]
+  Engine --> Preview[File Preview]
+  Preview --> Zip[ZIP Export]
+  Agent[Future Agent] -. Structured Schema .-> Validator
+  MCP[Future MCP Server] -. codegen.preview .-> Validator
+  Preview -. Approval Required .-> PR[Future GitHub PR]
+```
+
+具体职责：`skills/peach-media-codegen/scripts/generate.cjs` 负责 Schema 校验与代码生成；本地 `prototype/mock-server.cjs` 提供 `/demo/v1/codegen/*` 预览与导出服务；开发者工作台负责表单、逐文件审查与导出。不会写入正在运行的业务代码。
+
+未来落地时推荐自然语言需求 → Agent 解析 → **严格 Schema** → 确定性模板 → 沙箱编译/测试 → Diff 审核 → PR，Agent 不直接执行未经允许的 Shell、SQL 或 GitHub merge。MCP Tool 必须绑定实际用户/租户/项目权限；Skill 说明文件不是授权凭证，所有资源级授权仍由后端强制执行。
+
+与现有微服务标准保持一致：**OpenFeign** 负责内部同步调用；**RocketMQ** 负责异步任务；**Peach Scheduler** 负责计划触发；**Peach Compute** 负责后续容器化构建/测试。不引入外部 RPC 调度框架。

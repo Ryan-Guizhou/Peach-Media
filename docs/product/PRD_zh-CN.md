@@ -566,3 +566,28 @@ Content-Type: application/json
 - 行业功能参考（仅作设计对标）：[Cloudinary Documentation](https://cloudinary.com/documentation)、[ImageKit Documentation](https://imagekit.io/docs)、[Bynder](https://www.bynder.com/)、[Uploadcare API](https://uploadcare.com/docs/api/)、[Mux Direct Uploads](https://www.mux.com/docs/api-reference/video/direct-uploads)、[Kubernetes Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/job/)。
 
 > 上述产品能力借鉴不等于兼容其 API、定价或实现。架构图是建议实施方案，实时执行状态以未来的后端实现与测试为准。
+
+## AI 扩展试点：Peach Code Generator（新增 FR-145～FR-150，Proposed）
+
+> 2026-11-16：本节区分**当前原型**与**未来 AI Agent 产品**。当前仅验证确定性模板代码生成，不代表已接入模型、MCP、GitHub PR 自动化、真实后端安全检查或容器构建。
+
+| ID | 需求 | 验收口径 | 阶段 |
+|---|---|---|---|
+| FR-145 | 开发者平台独立代码生成工作台 | 从开发者平台访问，填写实体、表名、包名、字段和必填标识 | 试点原型 |
+| FR-146 | Schema 严格校验 | 拒绝不安全名字、重复字段、`tenantId/projectId` 覆盖和不支持的数据类型 | 试点原型 |
+| FR-147 | 多产物模板生成 | Java 域模型/DTO/Controller/Service/AccessPort、MySQL SQL、权限资源、OpenAPI、HTML、README 和 Schema | 试点原型 |
+| FR-148 | 代码审查与 ZIP 导出 | 生成前不覆盖任何仓库文件；逐文件预览、复制、导出 ZIP | 试点原型 |
+| FR-149 | Agent Skill 与 MCP 集成 | Agent 自然语言转结构化 Schema，MCP `codegen.preview`，写仓库须通过人工审批，禁止默认自动合并 | 未来 |
+| FR-150 | 容器编译验收与 PR 流程 | 受限 Docker/K8s 沙箱运行编译/测试，产出 diff，经权限校验后提 PR，CI 通过并由授权人员合并 | 未来 |
+
+### 首个垂直业务用例
+
+开发者希望为 Peach Media 添加`数字资产标签（AssetTag）`业务实体，定义 `assetId`、`tagName`、`sortOrder`、`enabled` 等字段。代码生成工作台先生成**骨架**，覆盖 `tenant_id`、`project_id` 与标准权限资源。实现人员再补齐 Service/AccessPort、字段校验、数据权限、操作审计、分页和相关测试。生成工具不得绕过 Peach Cloud 统一 Auth，也不得把客户端 tenantId 作为可信授权来源。
+
+### 交互原型位置与安全边界
+
+- HTML 入口：`prototype/developers/codegen.html`；使用现有原生 HTML/CSS/JS 开发者设计系统。
+- 本地 API：`POST /demo/v1/codegen/preview` 和 `/demo/v1/codegen/export`；**仅 localhost 模拟接口**，无生产鉴权，不属于公开 Open API。
+- 核心规则：`skills/peach-media-codegen/scripts/generate.cjs`，为确定性模板，没有运行大模型、MCP 或 Docker。
+- 导出的 Service 与 AccessPort 是接口：必须由具体项目实现并接入可信权限体系；禁止将骨架当成生产可运行后端。
+- 生成器不得修改现有仓库、触发 SQL 执行、调用 shell、接触云存储密钥或自动合并 PR。

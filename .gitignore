@@ -10,3 +10,5 @@ __pycache__/
 *.pyc
 docs/architecture/*.preview.png
 prototype/preview-*.png
+
+codegen-output/

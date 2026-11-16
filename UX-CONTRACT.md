@@ -72,3 +72,11 @@
 - Run `node --test tests/*.test.cjs` and `node tests/validate-static.mjs`.
 - Manual browser smoke: every route, tenant switching, asset details, file selection, job lifecycle, API Key one-time secret, Webhook simulation, confirmation, reset.
 - View at 1440px/1024px/760px/390px widths; check keyboard and reduced-motion setting. The file can be opened directly or via local static HTTP server.
+
+## Codegen workbench (2026-11-16 prototype)
+
+- The Developer Portal links to `prototype/developers/codegen.html` as a separate developer workflow, not an enterprise content-management menu.
+- Codegen schema input is editable, field types are enumerated, and forbidden identifiers/duplicates are rejected by the Mock server; values are never interpolated into HTML without escaping.
+- Preview renders file tabs with exact paths and source text; edited input invalidates prior outputs; only a fresh successful generation enables ZIP export.
+- Local Mock server is required to generate actual files. Static previews clearly disclose the missing service instead of pretending to generate files.
+- Generated artifacts are draft scaffolds with explicit tenant/project and authorization placeholders. No model, MCP server, repository writes, automatic merges, or actual Java compilation are included in the prototype.
