@@ -1,0 +1,4 @@
+interface:
+  display_name: "Peach Media Code Generator"
+  short_description: "Generate auditable, tenant-aware scaffolds from structured entity schemas"
+  brand_color: "#6355E8"

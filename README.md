@@ -112,3 +112,14 @@ Peach-Media/
 ## Technology references
 
 [Cloudinary](https://cloudinary.com/documentation) · [ImageKit](https://imagekit.io/docs) · [Uploadcare](https://uploadcare.com/docs/) · [Mux](https://www.mux.com/docs) · [Kubernetes Jobs](https://kubernetes.io/docs/concepts/workloads/controllers/job/) · [Docker security](https://docs.docker.com/engine/security/).
+
+<!-- doc-section:codegen -->
+## Code generation pilot (first Agent Skill direction)
+
+The Developer Portal now includes a [code generation workbench](prototype/developers/codegen.html). Start `node prototype/mock-server.cjs`, enter an entity and its fields, then preview or export 11 Java/SQL/OpenAPI/permissions/HTML scaffold artifacts.
+
+- Demo page: `http://127.0.0.1:8080/developers/codegen.html`.
+- Reusable Skill: [peach-media-codegen](skills/peach-media-codegen/SKILL.md), with an [example schema](skills/peach-media-codegen/references/example-schema.json).
+- CLI example from repository root: `node skills/peach-media-codegen/scripts/cli.cjs --input skills/peach-media-codegen/references/example-schema.json --out ./codegen-output`.
+- The current engine is deterministic, **not an LLM/Agent Runtime or an MCP service**. It does not execute SQL, write to GitHub, open PRs, or compile Java. Implement the generated Service/AccessPort against real Peach Cloud APIs before production usage.
+- Future flow: natural-language Agent → validated Schema → deterministic generation → sandbox compilation → reviewed Diff → GitHub PR.

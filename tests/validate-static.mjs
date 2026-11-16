@@ -17,7 +17,7 @@ for(const p of ['00-three-entry-architecture.svg','01-platform-overview.svg','02
 const en=read('README.md'),zh=read('README_zh-CN.md');
 const markers=s=>[...s.matchAll(/<!-- doc-section:([a-z-]+) -->/g)].map(m=>m[1]);
 assert.deepEqual(markers(en),markers(zh),'README section markers differ');
-assert.equal(markers(en).length,7);
+assert.equal(markers(en).length,8);
 for(const file of ['README.md','README_zh-CN.md']){
  const doc=read(file);
  const links=[...doc.matchAll(/\]\(([^)]+)\)/g)].map(m=>m[1]);
@@ -29,4 +29,4 @@ for(const file of ['README.md','README_zh-CN.md']){
 const prd=read('docs/product/PRD_zh-CN.md');
 for(const id of ['FR-001','FR-039','FR-060','FR-091','FR-115','FR-136','FR-137','FR-144'])assert.ok(prd.includes(id),`Missing ${id}`);
 for(const p of ['docs/product/PRD_zh-CN.md','docs/architecture/TECHNICAL_DESIGN.md','prototype/app.js'])assert.doesNotMatch(read(p),/OTRYX[ -]*Flow/i);
-console.log('Static/documentation checks passed: 3 independent entrances + 22 enterprise routes + mock HTTP + 5 editable SVGs + bilingual parity + 144 requirements.');
+console.log('Static/documentation checks passed: 3 independent entrances + 22 enterprise routes + mock HTTP + 5 editable SVGs + bilingual parity + 150 requirements + codegen.');

@@ -112,3 +112,14 @@ Peach-Media/
 ## 技术参考
 
 [Cloudinary](https://cloudinary.com/documentation) · [ImageKit](https://imagekit.io/docs) · [Uploadcare](https://uploadcare.com/docs/) · [Mux](https://www.mux.com/docs) · [Kubernetes Job](https://kubernetes.io/docs/concepts/workloads/controllers/job/) · [Docker 安全](https://docs.docker.com/engine/security/)。
+
+<!-- doc-section:codegen -->
+## 智能代码生成试点（首个 Agent Skill 方向）
+
+开发者平台新增 [代码生成工作台](prototype/developers/codegen.html)，在 `node prototype/mock-server.cjs` 启动后可以输入实体/字段定义，预览 Java、SQL、OpenAPI、权限资源、HTML 等 11 个文件，或导出 ZIP。
+
+- 演示入口：`http://127.0.0.1:8080/developers/codegen.html`
+- 可复用 Skill：[peach-media-codegen](skills/peach-media-codegen/SKILL.md)，示例输入见 `skills/peach-media-codegen/references/example-schema.json`。
+- CLI 演示：在仓库根目录执行 `node skills/peach-media-codegen/scripts/cli.cjs --input skills/peach-media-codegen/references/example-schema.json --out ./codegen-output`。
+- 生成器只做确定性模板处理，**尚未连接 LLM/Agent Runtime 或 MCP**；不会自动执行 SQL、写 GitHub、提交 PR 或构建 Java。Service/AccessPort 需要人工接入真实 Peach Cloud 后端。
+- 后续方向：Agent 自然语言需求解析 → 严格 Schema → 生成 → Docker/K8s 沙箱编译 → Diff 审批 → GitHub PR。

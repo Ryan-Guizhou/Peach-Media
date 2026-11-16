@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const Core = require('./core.js');
+const Codegen = require('../skills/peach-media-codegen/scripts/generate.cjs');
 const prototypeRoot = __dirname;
 const repositoryRoot = path.resolve(__dirname, '..');
 const fileTypes = {'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.md':'text/markdown; charset=utf-8','.webp':'image/webp','.png':'image/png','.json':'application/json'};
@@ -54,6 +55,31 @@ function createDemoServer(){
     if(route.startsWith('/demo/v1/')){
       // These controls are purposely local-only and unauthenticated for prototype exploration.
       // The server CLI listens on loopback; never expose it to a public interface.
+      if(route==='/demo/v1/codegen/preview'&&method==='POST'){
+        try{
+          const body=await readBody(req);
+          return ok(res,200,Codegen.render(body.schema));
+        }catch(error){
+          return fail(res,error.status||500,error.code||'CODEGEN_FAILED',error.status?error.message:'代码生成失败');
+        }
+      }
+      if(route==='/demo/v1/codegen/export'&&method==='POST'){
+        try{
+          const body=await readBody(req);
+          const generated=Codegen.render(body.schema);
+          const content=Codegen.zipStore(generated.files);
+          res.writeHead(200,{
+            'Content-Type':'application/zip',
+            'Content-Disposition':`attachment; filename="peach-codegen-${generated.normalizedSchema.slug}.zip"`,
+            'Content-Length':content.length,
+            'Cache-Control':'no-store',
+            'X-Content-Type-Options':'nosniff'
+          });
+          return res.end(content);
+        }catch(error){
+          return fail(res,error.status||500,error.code||'CODEGEN_FAILED',error.status?error.message:'代码导出失败');
+        }
+      }
       if(route==='/demo/v1/activity'&&method==='GET'){
         const tenantId=u.searchParams.get('tenantId')||'t1';
         if(!state.tenants.some(t=>t.id===tenantId))return fail(res,404,'TENANT_NOT_FOUND','租户不存在');
